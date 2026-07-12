@@ -1,0 +1,9 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "build": {
+    "beforeBuildCommand": "VITE_TAURI_E2E=1 pnpm build"
+  },
+  "app": {
+    "withGlobalTauri": true
+  }
+}

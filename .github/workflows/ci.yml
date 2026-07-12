@@ -1,0 +1,333 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - 'v*'
+      - 'cli-v*'
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  changes:
+    name: Detect changes
+    runs-on: ubuntu-latest
+    outputs:
+      rust: ${{ github.ref_type == 'tag' && 'true' || steps.filter.outputs.rust }}
+      frontend: ${{ startsWith(github.ref, 'refs/tags/v') && 'true' || steps.filter.outputs.frontend }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 20
+      - name: Validate GUI version
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: bash
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          python - "$version" <<'PY'
+          import json
+          import sys
+          import tomllib
+
+          expected = sys.argv[1]
+          with open("package.json", encoding="utf-8") as file:
+              assert json.load(file)["version"] == expected
+          with open("src-tauri/Cargo.toml", "rb") as file:
+              assert tomllib.load(file)["package"]["version"] == expected
+          PY
+      - name: Validate CLI version
+        if: startsWith(github.ref, 'refs/tags/cli-v')
+        shell: bash
+        run: |
+          version="${GITHUB_REF_NAME#cli-v}"
+          [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          python - "$version" <<'PY'
+          import sys
+          import tomllib
+
+          with open("crates/pd2-x64-converter-cli/Cargo.toml", "rb") as file:
+              assert tomllib.load(file)["package"]["version"] == sys.argv[1]
+          PY
+      - uses: dorny/paths-filter@v4
+        id: filter
+        if: github.ref_type != 'tag'
+        with:
+          base: ${{ github.ref }}
+          filters: |
+            rust:
+              - '.github/workflows/ci.yml'
+              - 'Cargo.toml'
+              - 'Cargo.lock'
+              - 'rust-toolchain*'
+              - 'crates/**'
+              - 'src-tauri/**'
+            frontend:
+              - '.github/workflows/ci.yml'
+              - 'src/**'
+              - 'test/**'
+              - 'scripts/**'
+              - 'index.html'
+              - 'package.json'
+              - 'pnpm-lock.yaml'
+              - 'pnpm-workspace.yaml'
+              - 'components.json'
+              - 'eslint.config.js'
+              - 'svelte.config.js'
+              - 'tsconfig.json'
+              - 'vite.config.ts'
+              - 'wdio.conf.mjs'
+
+  rust:
+    name: Rust
+    if: needs.changes.outputs.rust == 'true'
+    needs: changes
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+      - name: Install Tauri dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+      - run: cargo fmt --check
+      - run: cargo clippy --locked --workspace --all-targets -- -D warnings
+      - run: cargo test --locked --workspace
+
+  frontend:
+    name: Frontend
+    if: needs.changes.outputs.frontend == 'true'
+    needs: changes
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run check
+      - run: pnpm run lint
+      - run: pnpm test
+      - run: pnpm run fallow:audit
+
+  gui-build:
+    name: GUI (${{ matrix.os }})
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [rust, frontend]
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            artifact: gui-linux
+          - os: windows-latest
+            artifact: gui-windows
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: pnpm
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Install Linux dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+      - run: pnpm install --frozen-lockfile
+      - name: Build Linux GUI
+        if: runner.os == 'Linux'
+        run: pnpm run build:gui:linux:appimage
+      - name: Build Windows GUI
+        if: runner.os == 'Windows'
+        run: pnpm run build:gui:windows:installer
+      - name: Package GUI
+        shell: bash
+        run: |
+          mkdir release
+          if [[ "$RUNNER_OS" == "Linux" ]]; then
+            cp target/release/bundle/appimage/*.AppImage \
+              release/PD2x64Converter.appimage
+          else
+            cp target/release/pd2-x64-converter-gui.exe \
+              release/PD2x64Converter.exe
+            cp target/release/bundle/nsis/*-setup.exe \
+              release/PD2x64Converter-setup.exe
+          fi
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ${{ matrix.artifact }}
+          path: release/*
+          if-no-files-found: error
+
+  gui-release:
+    name: Publish GUI release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: gui-build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: gui-*
+          path: release
+          merge-multiple: true
+      - name: Get previous GUI tag
+        id: previous-tag
+        shell: bash
+        run: |
+          previous_tag="$(git tag --list 'v[0-9]*' --sort=-version:refname \
+            --merged "$GITHUB_REF_NAME" | grep -Fxv "$GITHUB_REF_NAME" | head -1 || true)"
+          echo "previous_tag=$previous_tag" >> "$GITHUB_OUTPUT"
+      - name: Generate changelog
+        id: changelog
+        if: steps.previous-tag.outputs.previous_tag != ''
+        uses: requarks/changelog-action@v1
+        with:
+          token: ${{ github.token }}
+          fromTag: ${{ github.ref_name }}
+          toTag: ${{ steps.previous-tag.outputs.previous_tag }}
+          writeToFile: false
+          restrictToTypes: feat,fix,perf
+          useGitmojis: false
+          includeInvalidCommits: false
+      - name: Write release notes
+        env:
+          CHANGELOG: ${{ steps.changelog.outputs.changes }}
+          PREVIOUS_TAG: ${{ steps.previous-tag.outputs.previous_tag }}
+        shell: bash
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          printf 'PD2 x64 Converter GUI %s\n' "$version" > release-notes.md
+          if [[ -n "$CHANGELOG" ]]; then
+            printf '\n%s\n' "$CHANGELOG" >> release-notes.md
+          elif [[ -z "$PREVIOUS_TAG" ]]; then
+            printf '\nInitial release.\n' >> release-notes.md
+          else
+            printf '\nMaintenance release.\n' >> release-notes.md
+          fi
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            gh release edit "$GITHUB_REF_NAME" --notes-file release-notes.md --latest
+            gh release upload "$GITHUB_REF_NAME" release/* --clobber
+          else
+            gh release create "$GITHUB_REF_NAME" release/* --verify-tag \
+              --title "$GITHUB_REF_NAME" --notes-file release-notes.md --latest
+          fi
+
+  cli-build:
+    name: CLI (${{ matrix.os }})
+    if: startsWith(github.ref, 'refs/tags/cli-v')
+    needs: rust
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            artifact: cli-linux
+          - os: windows-latest
+            artifact: cli-windows
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo build --locked --release -p pd2-x64-converter-cli
+      - name: Package CLI
+        shell: bash
+        run: |
+          mkdir release
+          if [[ "$RUNNER_OS" == "Linux" ]]; then
+            tar -C target/release -czf \
+              release/pd2-x64-converter-cli.tar.gz \
+              pd2-x64-converter-cli
+          else
+            cp target/release/pd2-x64-converter-cli.exe \
+              release/pd2-x64-converter-cli.exe
+          fi
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ${{ matrix.artifact }}
+          path: release/*
+          if-no-files-found: error
+
+  cli-release:
+    name: Publish CLI release
+    if: startsWith(github.ref, 'refs/tags/cli-v')
+    needs: cli-build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: cli-*
+          path: release
+          merge-multiple: true
+      - name: Get previous CLI tag
+        id: previous-tag
+        shell: bash
+        run: |
+          previous_tag="$(git tag --list 'cli-v[0-9]*' --sort=-version:refname \
+            --merged "$GITHUB_REF_NAME" | grep -Fxv "$GITHUB_REF_NAME" | head -1 || true)"
+          echo "previous_tag=$previous_tag" >> "$GITHUB_OUTPUT"
+      - name: Generate changelog
+        id: changelog
+        if: steps.previous-tag.outputs.previous_tag != ''
+        uses: requarks/changelog-action@v1
+        with:
+          token: ${{ github.token }}
+          fromTag: ${{ github.ref_name }}
+          toTag: ${{ steps.previous-tag.outputs.previous_tag }}
+          writeToFile: false
+          restrictToTypes: feat,fix,perf
+          useGitmojis: false
+          includeInvalidCommits: false
+      - name: Write release notes
+        env:
+          CHANGELOG: ${{ steps.changelog.outputs.changes }}
+          PREVIOUS_TAG: ${{ steps.previous-tag.outputs.previous_tag }}
+        shell: bash
+        run: |
+          version="${GITHUB_REF_NAME#cli-v}"
+          printf 'PD2 x64 Converter CLI %s\n' "$version" > release-notes.md
+          if [[ -n "$CHANGELOG" ]]; then
+            printf '\n%s\n' "$CHANGELOG" >> release-notes.md
+          elif [[ -z "$PREVIOUS_TAG" ]]; then
+            printf '\nInitial release.\n' >> release-notes.md
+          else
+            printf '\nMaintenance release.\n' >> release-notes.md
+          fi
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            gh release edit "$GITHUB_REF_NAME" --notes-file release-notes.md
+            gh release upload "$GITHUB_REF_NAME" release/* --clobber
+          else
+            gh release create "$GITHUB_REF_NAME" release/* --verify-tag \
+              --title "$GITHUB_REF_NAME" --notes-file release-notes.md --latest=false
+          fi

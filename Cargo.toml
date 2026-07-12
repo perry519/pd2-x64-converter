@@ -1,0 +1,26 @@
+[workspace]
+members = [
+  "crates/pd2-x64-converter-core",
+  "crates/pd2-x64-converter-cli",
+  "src-tauri",
+]
+resolver = "2"
+
+[workspace.package]
+edition = "2024"
+rust-version = "1.88"
+license = "MIT"
+repository = "https://github.com/perry519/pd2-x64-converter"
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+
+[workspace.dependencies]
+pd2-x64-converter-core = { path = "crates/pd2-x64-converter-core" }
+serde = { version = "1", features = [ "derive" ] }
+serde_json = "1"
+sha2 = "0.10"
+flate2 = "1"
+md5 = "0.7"
+rayon = "1"
+tempfile = "3"

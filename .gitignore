@@ -1,0 +1,9 @@
+/target
+/dist
+/node_modules
+/.svelte-kit
+/.tauri
+/.pd2-x64-converter
+*.log
+
+/src-tauri/gen/schemas/

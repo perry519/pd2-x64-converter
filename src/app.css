@@ -1,0 +1,91 @@
+@import 'tailwindcss';
+
+@theme inline {
+  --color-background: var(--bg);
+  --color-foreground: var(--text);
+  --color-card: var(--panel);
+  --color-card-foreground: var(--text);
+  --color-popover: var(--panel);
+  --color-popover-foreground: var(--text);
+  --color-primary: var(--accent);
+  --color-primary-foreground: white;
+  --color-secondary: var(--panel-strong);
+  --color-secondary-foreground: var(--text);
+  --color-muted: var(--bg-lift);
+  --color-muted-foreground: var(--muted);
+  --color-accent: var(--panel-strong);
+  --color-accent-foreground: var(--text);
+  --color-destructive: var(--danger);
+  --color-border: var(--border);
+  --color-input: var(--border);
+  --color-ring: var(--accent);
+}
+
+:root,
+[data-app-shell] {
+  --font-app:
+    Aptos, 'Segoe UI', ui-sans-serif, system-ui, -apple-system,
+    BlinkMacSystemFont, sans-serif;
+  --radius-md: 7px;
+  --bg: oklch(17% 0.006 245);
+  --bg-lift: oklch(20% 0.008 245);
+  --panel: oklch(23% 0.01 245);
+  --panel-strong: oklch(28% 0.012 245);
+  --border: oklch(38% 0.012 245);
+  --text: oklch(95% 0.008 245);
+  --muted: oklch(70% 0.018 245);
+  --accent: oklch(62% 0.19 255);
+  --accent-strong: oklch(54% 0.2 255);
+  --danger: oklch(62% 0.2 25);
+  --danger-strong: oklch(54% 0.21 25);
+  --ok: oklch(71% 0.16 155);
+  --warn: oklch(77% 0.16 78);
+  --danger-bg: oklch(62% 0.2 25 / 0.18);
+  --ok-bg: oklch(71% 0.16 155 / 0.16);
+  --warn-bg: oklch(77% 0.16 78 / 0.16);
+  --shadow: 0 22px 70px oklch(0% 0 0 / 0.34);
+}
+
+:root[data-appearance='light'],
+[data-app-shell][data-appearance='light'] {
+  --bg: oklch(96% 0.008 245);
+  --bg-lift: oklch(99% 0.004 245);
+  --panel: oklch(100% 0 0);
+  --panel-strong: oklch(94% 0.008 245);
+  --border: oklch(84% 0.014 245);
+  --text: oklch(24% 0.018 245);
+  --muted: oklch(47% 0.026 245);
+  --accent: oklch(54% 0.2 255);
+  --accent-strong: oklch(46% 0.2 255);
+  --danger: oklch(52% 0.2 25);
+  --danger-strong: oklch(45% 0.2 25);
+  --ok: oklch(47% 0.15 155);
+  --warn: oklch(48% 0.13 78);
+  --danger-bg: oklch(52% 0.2 25 / 0.14);
+  --ok-bg: oklch(47% 0.15 155 / 0.12);
+  --warn-bg: oklch(48% 0.13 78 / 0.12);
+  --shadow: 0 22px 70px oklch(30% 0.018 245 / 0.16);
+}
+
+@media (prefers-color-scheme: light) {
+  :root[data-appearance='system'],
+  [data-app-shell][data-appearance='system'] {
+    --bg: oklch(96% 0.008 245);
+    --bg-lift: oklch(99% 0.004 245);
+    --panel: oklch(100% 0 0);
+    --panel-strong: oklch(94% 0.008 245);
+    --border: oklch(84% 0.014 245);
+    --text: oklch(24% 0.018 245);
+    --muted: oklch(47% 0.026 245);
+    --accent: oklch(54% 0.2 255);
+    --accent-strong: oklch(46% 0.2 255);
+    --danger: oklch(52% 0.2 25);
+    --danger-strong: oklch(45% 0.2 25);
+    --ok: oklch(47% 0.15 155);
+    --warn: oklch(48% 0.13 78);
+    --danger-bg: oklch(52% 0.2 25 / 0.14);
+    --ok-bg: oklch(47% 0.15 155 / 0.12);
+    --warn-bg: oklch(48% 0.13 78 / 0.12);
+    --shadow: 0 22px 70px oklch(30% 0.018 245 / 0.16);
+  }
+}

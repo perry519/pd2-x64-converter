@@ -1,0 +1,36 @@
+{
+  "entry": ["test/e2e/**/*.e2e.mjs"],
+  "ignorePatterns": ["src/components/ui/**", "src/components/utils.ts"],
+  "ignoreDependencies": [
+    "@internationalized/date",
+    "@tauri-apps/cli",
+    "@wdio/local-runner",
+    "@wdio/mocha-framework",
+    "@wdio/spec-reporter",
+    "bits-ui",
+    "clsx",
+    "tailwind-merge",
+    "tailwind-variants"
+  ],
+  "ignoreExports": [
+    {
+      "file": "src/features/converter/**/*.svelte",
+      "exports": [
+        "cancelScan",
+        "dryRun",
+        "fallbackTitle",
+        "flow",
+        "isConverting",
+        "progress",
+        "root",
+        "title"
+      ]
+    }
+  ],
+  "duplicates": {
+    "ignore": ["src/app.css"]
+  },
+  "health": {
+    "ignore": ["src/components/ui/**"]
+  }
+}

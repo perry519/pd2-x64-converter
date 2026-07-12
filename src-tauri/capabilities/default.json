@@ -1,0 +1,22 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "Converter window permissions",
+  "windows": ["main"],
+  "permissions": [
+    "core:default",
+    "core:window:allow-show",
+    "dialog:default",
+    "store:allow-load",
+    "store:allow-get",
+    "store:allow-set",
+    {
+      "identifier": "opener:allow-open-url",
+      "allow": [
+        {
+          "url": "https://github.com/perry519/pd2-x64-converter/releases/*"
+        }
+      ]
+    }
+  ]
+}

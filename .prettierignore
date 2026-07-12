@@ -1,0 +1,14 @@
+*.js
+*.cjs
+*.mjs
+*.jsx
+*.ts
+*.cts
+*.mts
+*.tsx
+*.svelte
+*.json
+*.jsonc
+*.json5
+*.yaml
+*.yml

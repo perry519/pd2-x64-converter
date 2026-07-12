@@ -1,0 +1,49 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "PD2 x64 Converter",
+  "version": "../package.json",
+  "identifier": "perry519.pd2-x64-converter",
+  "build": {
+    "beforeDevCommand": "pnpm dev",
+    "beforeBuildCommand": "pnpm build",
+    "devUrl": "http://localhost:5173",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "PD2 x64 Converter",
+        "width": 1200,
+        "height": 840,
+        "minWidth": 960,
+        "minHeight": 540,
+        "visible": false
+      }
+    ],
+    "security": {
+      "capabilities": ["default"],
+      "csp": {
+        "default-src": "'self' customprotocol: asset:",
+        "connect-src": "ipc: http://ipc.localhost https://api.github.com",
+        "img-src": "'self' asset: http://asset.localhost blob: data:",
+        "style-src": "'self' 'unsafe-inline'"
+      },
+      "devCsp": {
+        "default-src": "'self' customprotocol: asset:",
+        "connect-src": "ipc: http://ipc.localhost http://localhost:5173 ws://localhost:5173 https://api.github.com",
+        "img-src": "'self' asset: http://asset.localhost blob: data:",
+        "style-src": "'self' 'unsafe-inline'"
+      }
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["appimage"],
+    "icon": ["icons/icon.png", "icons/icon.ico"],
+    "linux": {
+      "appimage": {
+        "files": {}
+      }
+    }
+  }
+}

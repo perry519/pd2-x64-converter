@@ -1,0 +1,24 @@
+[package]
+name = "pd2-x64-converter-cli"
+version = "1.0.0"
+
+edition.workspace = true
+
+rust-version.workspace = true
+
+license.workspace = true
+
+[lints]
+workspace = true
+
+[[bin]]
+name = "pd2-x64-converter-cli"
+path = "src/main.rs"
+
+[dependencies]
+pd2-x64-converter-core.workspace = true
+
+serde_json.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true
