@@ -50,3 +50,7 @@ pnpm run build:gui:linux:appimage   # Linux AppImage
 pnpm run build:gui:windows          # Windows executable
 pnpm run build:gui:windows:installer # Windows installer
 ```
+
+## Licensing
+
+Third-party attributions are listed in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
