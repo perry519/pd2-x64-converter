@@ -12,9 +12,8 @@ PLUGIN="${TAURI_APPIMAGE_PLUGIN:-$HOME/.cache/tauri/linuxdeploy-plugin-appimage.
 LOG="$(mktemp)"
 trap 'rm -f "$LOG"' EXIT
 
-BUILD_SUCCEEDED=false
-if WEBKIT_DISABLE_DMABUF_RENDERER=1 pnpm exec tauri build --bundles appimage 2>&1 | tee "$LOG"; then
-  BUILD_SUCCEEDED=true
+if pnpm exec tauri build --bundles appimage 2>&1 | tee "$LOG"; then
+  :
 elif ! rg -q "failed to run linuxdeploy|Strip call failed|\\.relr\\.dyn" "$LOG"; then
   exit 1
 fi
@@ -40,19 +39,31 @@ cp "$ICON" "$THEME_ICON"
 cp "$ICON" "$APPDIR/pd2-x64-converter-gui.png"
 ln -sfn pd2-x64-converter-gui.png "$APPDIR/.DirIcon"
 
-if [[ "$BUILD_SUCCEEDED" == false ]]; then
-  cat >"$APPDIR/AppRun" <<'APPRUN'
+find "$APPDIR"/usr/lib* -name 'libwebkit*' -exec sed -i -e 's|/usr|././|g' '{}' \;
+
+find "$APPDIR"/usr/lib* \
+  \( -name 'libepoxy.so*' -o -name 'libwayland-*.so*' -o -name 'librsvg-2.so*' \) \
+  -delete
+
+cat >"$APPDIR/AppRun" <<'APPRUN'
 #!/usr/bin/env sh
 set -eu
 
 APPDIR="${APPDIR:-$(dirname "$(readlink -f "$0")")}"
 export LD_LIBRARY_PATH="$APPDIR/usr/lib:$APPDIR/usr/lib64:${LD_LIBRARY_PATH:-}"
-export WEBKIT_DISABLE_DMABUF_RENDERER="${WEBKIT_DISABLE_DMABUF_RENDERER:-1}"
+export GSETTINGS_SCHEMA_DIR="$APPDIR/usr/share/glib-2.0/schemas"
 
+for gio_module_dir in "$APPDIR"/usr/lib/*-linux-gnu/gio/modules "$APPDIR"/usr/lib/gio/modules; do
+  if [ -d "$gio_module_dir" ]; then
+    export GIO_MODULE_DIR="$gio_module_dir"
+    break
+  fi
+done
+
+cd "$APPDIR/usr"
 exec "$APPDIR/usr/bin/pd2-x64-converter-gui" "$@"
 APPRUN
-  chmod +x "$APPDIR/AppRun"
-fi
+chmod +x "$APPDIR/AppRun"
 
 rm -f "$APPDIR/usr/bin/xdg-open" "$OUTPUT"
 

@@ -26,7 +26,6 @@ const commandArgs = wantsAppImage
   : ['exec', 'tauri', ...args, ...(wantsNativeBuild ? ['--no-bundle'] : [])]
 
 const result = spawnSync(command, commandArgs, {
-  env: { ...process.env, WEBKIT_DISABLE_DMABUF_RENDERER: '1' },
   shell: platform === 'win32',
   stdio: 'inherit',
 })
