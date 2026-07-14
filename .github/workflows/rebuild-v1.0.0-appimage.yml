@@ -1,0 +1,41 @@
+name: Rebuild v1.0.0 AppImage
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  rebuild:
+    name: Rebuild and replace AppImage
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: pnpm
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Install Linux dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            jq libayatana-appindicator3-dev librsvg2-dev \
+            libwebkit2gtk-4.1-dev patchelf ripgrep
+      - run: pnpm install --frozen-lockfile
+      - name: Build AppImage
+        run: pnpm run build:gui:linux:appimage
+      - name: Package AppImage
+        run: |
+          mkdir -p release
+          cp target/release/bundle/appimage/*.AppImage \
+            release/PD2x64Converter.appimage
+      - name: Replace v1.0.0 AppImage asset
+        if: ${{ !env.ACT }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload v1.0.0 release/PD2x64Converter.appimage --clobber
