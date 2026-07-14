@@ -7,7 +7,7 @@
   "repository": "https://github.com/perry519/pd2-x64-converter",
   "scripts": {
     "dev": "vite",
-    "dev:tauri:webdriver": "VITE_TAURI_E2E=1 WDIO_EMBEDDED_SERVER=true TAURI_WEBDRIVER_PORT=4565 WEBKIT_DISABLE_DMABUF_RENDERER=1 node scripts/tauri.mjs dev --features e2e --config src-tauri/tauri.e2e.conf.json",
+    "dev:tauri:webdriver": "VITE_TAURI_E2E=1 WDIO_EMBEDDED_SERVER=true TAURI_WEBDRIVER_PORT=4565 __NV_DISABLE_EXPLICIT_SYNC=1 node scripts/tauri.mjs dev --features e2e --config src-tauri/tauri.e2e.conf.json",
     "build": "vite build",
     "build:gui:linux": "pnpm run tauri build --no-bundle",
     "build:gui:linux:appimage": "bash scripts/build-appimage.sh",
