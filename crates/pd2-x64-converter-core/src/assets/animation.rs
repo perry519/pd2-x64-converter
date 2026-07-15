@@ -1,11 +1,17 @@
-use flate2::{Compression, read::ZlibDecoder, write::ZlibEncoder};
+use flate2::read::ZlibDecoder;
+
+#[cfg(test)]
+use flate2::{Compression, write::ZlibEncoder};
+#[cfg(test)]
 use std::io::Write;
 
 use crate::error::{Error, Result, invalid};
 use crate::manifest::LayoutState;
 
+#[cfg(test)]
+use super::push_u32;
 use super::{
-  align8, checked_size, p32_bytes, p64_bytes, push_u32, read_array, read_cstr, read_u32, read_u64,
+  align8, checked_size, p32_bytes, p64_bytes, read_array, read_cstr, read_u32, read_u64,
   require_range, usize_from_u64, write_u32_at, write_u64_at,
 };
 
@@ -14,19 +20,41 @@ const ANIMATION_X32_HEADER_SIZE: usize = 60;
 const ANIMATION_X64_HEADER_SIZE: usize = 120;
 
 pub(super) fn classify(data: &[u8], label: &str) -> Result<LayoutState> {
+  if parse_animation_x64(data, label).is_ok() {
+    return Ok(LayoutState::AlreadyX64);
+  }
+  if parse_animation_x32(data, label).is_ok() {
+    return Ok(LayoutState::SupportedX32);
+  }
+
   let raw = decompress_animation(data, label)?;
   if parse_animation_x64(&raw, label).is_ok() {
-    return Ok(LayoutState::AlreadyX64);
+    return invalid!("{label}: wrapped x64 animations are not supported");
   }
   parse_animation_x32(&raw, label)?;
   Ok(LayoutState::SupportedX32)
 }
 
 pub(super) fn convert(data: &[u8], label: &str) -> Result<Vec<u8>> {
-  let raw = decompress_animation(data, label)?;
-  let parsed = parse_animation_x32(&raw, label)?;
-  let converted_raw = build_animation_x64(&parsed)?;
-  compress_animation(&converted_raw)
+  if parse_animation_x64(data, label).is_ok() {
+    return invalid!("{label}: animation is already raw x64");
+  }
+  if let Ok(parsed) = parse_animation_x32(data, label) {
+    return build_animation_x64(&parsed);
+  }
+
+  let raw = decompress_animation(data, label).map_err(|source| Error::InvalidInput {
+    context: format!("{label}: unsupported animation input"),
+    source: Box::new(source),
+  })?;
+  if parse_animation_x64(&raw, label).is_ok() {
+    return invalid!("{label}: wrapped x64 animations are not supported");
+  }
+  let parsed = parse_animation_x32(&raw, label).map_err(|source| Error::InvalidInput {
+    context: format!("{label}: unsupported animation input"),
+    source: Box::new(source),
+  })?;
+  build_animation_x64(&parsed)
 }
 
 #[derive(Debug)]
@@ -71,6 +99,7 @@ fn decompress_animation(data: &[u8], label: &str) -> Result<Vec<u8>> {
   Ok(raw)
 }
 
+#[cfg(test)]
 fn compress_animation(raw: &[u8]) -> Result<Vec<u8>> {
   let mut encoder = ZlibEncoder::new(Vec::new(), Compression::fast());
   encoder.write_all(raw)?;

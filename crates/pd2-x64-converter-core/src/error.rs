@@ -13,6 +13,7 @@ pub enum Error {
   Io(io::Error),
   Json(serde_json::Error),
   Invalid(String),
+  InvalidInput { context: String, source: Box<Error> },
 }
 
 impl Display for Error {
@@ -21,6 +22,7 @@ impl Display for Error {
       Self::Io(error) => write!(f, "{error}"),
       Self::Json(error) => write!(f, "{error}"),
       Self::Invalid(message) => f.write_str(message),
+      Self::InvalidInput { context, source } => write!(f, "{context}: {source}"),
     }
   }
 }
@@ -31,6 +33,7 @@ impl std::error::Error for Error {
       Self::Io(error) => Some(error),
       Self::Json(error) => Some(error),
       Self::Invalid(_) => None,
+      Self::InvalidInput { source, .. } => Some(source),
     }
   }
 }
