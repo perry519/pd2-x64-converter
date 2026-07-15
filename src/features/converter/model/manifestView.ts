@@ -13,7 +13,6 @@ const assetKindLabels: Partial<Record<AssetKind, string>> = {
   animation: 'Animation',
   font: 'Font',
   mass_unit: 'Mass unit',
-  model: 'Model',
   script_data: 'Script data',
   sound_bank: 'Sound bank',
   stream: 'Stream',
@@ -82,12 +81,8 @@ export function isVisibleEntry(entry: ManifestEntry): boolean {
   return visibleStatuses[entry.status]
 }
 
-function isSkippedModel(entry: ManifestEntry): boolean {
-  return entry.asset_kind === 'model' && entry.status === 'unsupported'
-}
-
 function isScanOnlyEntry(entry: ManifestEntry): boolean {
-  return entry.status === 'already_x64' || isSkippedModel(entry)
+  return entry.status === 'already_x64'
 }
 
 export function isPlannedEntry(entry: ManifestEntry): boolean {
@@ -169,16 +164,12 @@ export function convertedResultLabelFor(manifest: RunManifest | null): string {
 }
 
 export function detailFor(entry: ManifestEntry): string {
-  if (isSkippedModel(entry))
-    return 'Unsupported model'
   if (entry.warning || entry.error)
     return entry.warning ?? entry.error ?? ''
   return ''
 }
 
 export function statusLabelFor(entry: ManifestEntry, dryRun = false): string {
-  if (isSkippedModel(entry))
-    return 'Skipped'
   const dryRunLabel = dryRun ? dryRunStatusLabels[entry.status] : undefined
   if (dryRunLabel)
     return dryRunLabel

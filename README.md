@@ -7,7 +7,6 @@ Supported:
 - `.font`
 - `.animation`
 - `.massunit`
-- `.model` — supported legacy static and rigged meshes (experimental)
 - `.stream`
 - `.bnk`
 - ScriptData: `.sequence_manager`, `.continent`, `.environment`,

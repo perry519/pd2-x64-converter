@@ -12,9 +12,9 @@ it('shows excluded counts and reports checkbox changes', async () => {
   const setIncluded = vi.fn()
   render(AssetTypeFilter, {
     props: {
-      excludedKinds: ['model'],
+      excludedKinds: ['font'],
       includeAll,
-      options: [{ count: 2, kind: 'model', label: 'Model' }],
+      options: [{ count: 2, kind: 'font', label: 'Font' }],
       setIncluded,
     },
   })
@@ -22,11 +22,11 @@ it('shows excluded counts and reports checkbox changes', async () => {
   await fireEvent.click(screen.getByRole('button', { name: 'Choose asset types to convert' }))
 
   expect(screen.getByText('1 excluded')).toBeVisible()
-  const checkbox = screen.getByRole('checkbox', { name: 'Model' })
+  const checkbox = screen.getByRole('checkbox', { name: 'Font' })
   expect(checkbox).not.toBeChecked()
 
   await fireEvent.click(checkbox)
-  expect(setIncluded).toHaveBeenCalledWith('model', true)
+  expect(setIncluded).toHaveBeenCalledWith('font', true)
 
   await fireEvent.click(screen.getByRole('button', { name: 'Include all' }))
   expect(includeAll).toHaveBeenCalledTimes(1)

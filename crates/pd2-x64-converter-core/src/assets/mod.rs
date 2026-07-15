@@ -7,7 +7,6 @@ use crate::manifest::{AssetKind, LayoutState};
 pub(crate) mod animation;
 pub(crate) mod font;
 pub(crate) mod massunit;
-pub(crate) mod model;
 pub(crate) mod scriptdata;
 pub(crate) mod soundbank;
 pub(crate) mod stream;
@@ -22,10 +21,6 @@ pub(crate) fn classify_animation(data: &[u8], label: &str) -> Result<LayoutState
 
 pub(crate) fn classify_massunit(data: &[u8], label: &str) -> Result<LayoutState> {
   massunit::classify(data, label)
-}
-
-pub(crate) fn classify_model(data: &[u8], label: &str) -> Result<LayoutState> {
-  model::classify(data, label)
 }
 
 pub(crate) fn classify_stream(data: &[u8], label: &str) -> Result<LayoutState> {
@@ -50,7 +45,6 @@ pub(crate) fn convert(path: &Path, asset_kind: AssetKind, data: &[u8]) -> Result
     AssetKind::Font => font::convert(data, &label)?,
     AssetKind::Animation => animation::convert(data, &label)?,
     AssetKind::MassUnit => massunit::convert(data, &label)?,
-    AssetKind::Model => model::convert(data, &label)?,
     AssetKind::Stream => stream::convert(data, &label)?,
     AssetKind::SoundBank => soundbank::convert(data, &label)?,
     AssetKind::ScriptData => {

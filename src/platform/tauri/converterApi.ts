@@ -20,7 +20,6 @@ export type AssetKind
   = | 'font'
     | 'animation'
     | 'mass_unit'
-    | 'model'
     | 'stream'
     | 'sound_bank'
     | 'script_data'

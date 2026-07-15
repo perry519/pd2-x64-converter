@@ -35,6 +35,7 @@ pub fn scan_with_progress(
   let started = now_unix();
   let mut files = Vec::new();
   collect_files(&input, &mut files)?;
+  files.retain(|path| suffix(path).as_deref() != Some(".model"));
 
   let total = files.len();
   let processed = AtomicUsize::new(0);
@@ -197,29 +198,6 @@ fn detect_file(root: &Path, path: &Path) -> Result<ManifestEntry> {
           AssetKind::MassUnit,
           LayoutState::InvalidSupported,
           EntryStatus::Warning,
-          Some(error.to_string()),
-        ),
-      }
-    }
-    Some(".model") => {
-      match fs::read(path).map(|data| assets::classify_model(&data, &relative_path))? {
-        Ok(LayoutState::SupportedX32) => (
-          AssetKind::Model,
-          LayoutState::SupportedX32,
-          EntryStatus::Planned,
-          None,
-        ),
-        Ok(LayoutState::AlreadyX64) => (
-          AssetKind::Model,
-          LayoutState::AlreadyX64,
-          EntryStatus::AlreadyX64,
-          None,
-        ),
-        Ok(_) => unreachable!("model classifier returned non-model state"),
-        Err(error) => (
-          AssetKind::Model,
-          LayoutState::UnsupportedUnknown,
-          EntryStatus::Unsupported,
           Some(error.to_string()),
         ),
       }

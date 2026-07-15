@@ -24,6 +24,8 @@ fn scan_json_reports_sorted_candidates() {
   );
   let json: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
   assert_eq!(json["summary"]["planned"], 1);
+  assert_eq!(json["summary"]["unsupported"], 0);
+  assert_eq!(json["entries"].as_array().unwrap().len(), 1);
   assert_eq!(json["entries"][0]["relative_path"], "a.font");
 }
 

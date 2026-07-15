@@ -1,8 +1,7 @@
 use super::*;
-use crate::assets::{legacy_font, model::legacy_model};
+use crate::assets::legacy_font;
 use crate::files::METADATA_DIR;
 use std::fs;
-use std::path::Path;
 use tempfile::tempdir;
 
 #[test]
@@ -27,7 +26,7 @@ fn scans_a_single_file() {
 #[test]
 fn scan_jobs_four_matches_serial_order_and_summary() {
   let dir = tempdir().unwrap();
-  fs::write(dir.path().join("b.model"), b"model").unwrap();
+  fs::write(dir.path().join("b.texture"), b"texture").unwrap();
   fs::write(dir.path().join("a.font"), legacy_font()).unwrap();
   fs::create_dir(dir.path().join(METADATA_DIR)).unwrap();
   fs::write(
@@ -84,9 +83,9 @@ fn reporter_panic_does_not_fail_scan() {
 }
 
 #[test]
-fn cancellation_after_scan_marks_the_model_cancelled() {
+fn cancellation_after_scan_marks_the_asset_cancelled() {
   let dir = tempdir().unwrap();
-  fs::write(dir.path().join("skinned.model"), legacy_model(true)).unwrap();
+  fs::write(dir.path().join("asset.font"), legacy_font()).unwrap();
   let cancel = CancelToken::default();
   let reporter_cancel = cancel.clone();
 
@@ -107,38 +106,6 @@ fn cancellation_after_scan_marks_the_model_cancelled() {
 
   assert_eq!(manifest.entries[0].status, EntryStatus::Cancelled);
   assert_eq!(manifest.summary.cancelled, 1);
-}
-
-#[test]
-fn scan_classifies_model_layouts() {
-  let dir = tempdir().unwrap();
-  fs::write(dir.path().join("static.model"), legacy_model(false)).unwrap();
-  let converted = assets::convert(
-    Path::new("converted.model"),
-    AssetKind::Model,
-    &legacy_model(false),
-  )
-  .unwrap();
-  fs::write(dir.path().join("converted.model"), converted).unwrap();
-
-  let manifest = scan(ScanOptions {
-    root: dir.path().to_path_buf(),
-    jobs: 1,
-    write_report: false,
-  })
-  .unwrap();
-
-  assert_eq!(manifest.summary.planned, 1);
-  assert_eq!(manifest.summary.already_x64, 1);
-  let static_entry = manifest
-    .entries
-    .iter()
-    .find(|entry| entry.relative_path == "static.model")
-    .unwrap();
-  assert_eq!(static_entry.asset_kind, AssetKind::Model);
-  assert_eq!(static_entry.layout_state, LayoutState::SupportedX32);
-  assert_eq!(static_entry.status, EntryStatus::Planned);
-  assert!(static_entry.warning.is_none());
 }
 
 #[test]

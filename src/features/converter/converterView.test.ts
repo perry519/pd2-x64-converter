@@ -34,7 +34,7 @@ function entry(status: ManifestEntry['status'], extra: Partial<ManifestEntry> = 
   return {
     index: 1,
     relative_path: 'units/payday2/props/foo.unit',
-    asset_kind: 'model',
+    asset_kind: 'animation',
     layout_state: 'legacy',
     status,
     warning: null,
@@ -70,13 +70,13 @@ it('multiple folder helpers label common roots and merge manifests', () => {
     phase: 'process',
     processed: 0,
     total: 1,
-    currentPath: 'assets/asset.model',
-  }], 'a')[0].currentPath).toBe('a/assets/asset.model')
+    currentPath: 'assets/asset.animation',
+  }], 'a')[0].currentPath).toBe('a/assets/asset.animation')
   expect(prefixProgressEvents([{
     phase: 'scan',
     processed: 1,
     total: 1,
-    currentPath: 'assets/asset.model',
+    currentPath: 'assets/asset.animation',
   }], 'b', 1, [
     manifest([entry('planned')], false, '/mods/a'),
     manifest([entry('planned')], false, '/mods/b'),
@@ -85,13 +85,13 @@ it('multiple folder helpers label common roots and merge manifests', () => {
     phase: 'scan',
     processed: 1,
     total: 3,
-    currentPath: 'assets/asset.model',
+    currentPath: 'assets/asset.animation',
   }], 'b', 1, [
     manifest([entry('planned')], false, '/mods/a'),
   ])[0]).toMatchObject({
     processed: 2,
     total: 4,
-    currentPath: 'b/assets/asset.model',
+    currentPath: 'b/assets/asset.animation',
   })
   expect(prefixProgressEvents([{
     phase: 'scan',
@@ -112,7 +112,7 @@ it('labels and merges single-file and mixed inputs', () => {
     manifest([
       entry('planned', { relative_path: 'b.font' }),
       entry('unsupported', { asset_kind: 'unsupported_unknown', relative_path: 'readme.txt' }),
-      entry('warning', { relative_path: 'unknown.model' }),
+      entry('warning', { relative_path: 'unknown.animation' }),
     ], false, '/mods/nested'),
   ]
   expect(inputLabelFor(inputs, manifests)).toBe('3 files under /mods')
@@ -120,7 +120,7 @@ it('labels and merges single-file and mixed inputs', () => {
     'a.font',
     'nested/b.font',
     'nested/readme.txt',
-    'nested/unknown.model',
+    'nested/unknown.animation',
   ])
 })
 
@@ -144,9 +144,6 @@ it('forwards mixed paths from a desktop drop', () => {
 })
 
 it('manifest helpers expose review and result behavior', () => {
-  const unsupportedModel = entry('unsupported', { warning: 'verbose parser error' })
-  expect(detailFor(unsupportedModel)).toBe('Unsupported model')
-  expect(statusLabelFor(unsupportedModel)).toBe('Skipped')
   expect(statusLabelFor(entry('already_x64'))).toBe('Ready as-is')
   expect(detailFor(entry('warning', { asset_kind: 'animation', warning: 'needs review' }))).toBe(
     'needs review',
@@ -157,14 +154,13 @@ it('manifest helpers expose review and result behavior', () => {
     entry('planned'),
     entry('excluded'),
     entry('already_x64'),
-    unsupportedModel,
+    entry('unsupported', { asset_kind: 'unsupported_unknown' }),
   ])
   const resultManifest = manifest([entry('converted')], true)
   expect(visibleEntriesFor(scanManifest.entries)).toHaveLength(1)
   expect(visibleEntriesFor(scanManifest.entries, true)).toEqual([
     scanManifest.entries[0],
     scanManifest.entries[2],
-    unsupportedModel,
   ])
   expect(plannedEntriesFor(scanManifest.entries)).toHaveLength(1)
   expect(convertedResultLabelFor(resultManifest)).toBe('Would convert')
@@ -176,21 +172,21 @@ it('manifest helpers expose review and result behavior', () => {
 
 it('asset type exclusions replace review status and remove planned work', () => {
   const entries = [
-    entry('planned', { asset_kind: 'model' }),
-    entry('unsupported', { asset_kind: 'model' }),
-    entry('already_x64', { asset_kind: 'model' }),
+    entry('planned', { asset_kind: 'font' }),
+    entry('warning', { asset_kind: 'font' }),
+    entry('already_x64', { asset_kind: 'font' }),
     entry('planned', { asset_kind: 'animation' }),
   ]
 
   expect(assetTypeOptionsFor(entries)).toEqual([
     { count: 1, kind: 'animation', label: 'Animation' },
-    { count: 3, kind: 'model', label: 'Model' },
+    { count: 3, kind: 'font', label: 'Font' },
   ])
 
-  const reviewEntries = reviewEntriesFor(entries, ['model'])
+  const reviewEntries = reviewEntriesFor(entries, ['font'])
   expect(reviewEntries.map(({ status }) => status)).toEqual([
     'excluded',
-    'unsupported',
+    'excluded',
     'already_x64',
     'planned',
   ])

@@ -64,7 +64,6 @@ pub enum AssetKind {
   Font,
   Animation,
   MassUnit,
-  Model,
   Stream,
   SoundBank,
   ScriptData,
