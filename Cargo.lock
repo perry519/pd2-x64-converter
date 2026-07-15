@@ -2604,7 +2604,7 @@ dependencies = [
 
 [[package]]
 name = "pd2-x64-converter-cli"
-version = "1.0.0"
+version = "1.0.1"
 dependencies = [
  "pd2-x64-converter-core",
  "serde_json",
@@ -2613,7 +2613,7 @@ dependencies = [
 
 [[package]]
 name = "pd2-x64-converter-core"
-version = "1.0.0"
+version = "1.0.1"
 dependencies = [
  "flate2",
  "md5",
@@ -2626,7 +2626,7 @@ dependencies = [
 
 [[package]]
 name = "pd2-x64-converter-tauri"
-version = "1.0.0"
+version = "1.0.1"
 dependencies = [
  "pd2-x64-converter-core",
  "serde",
